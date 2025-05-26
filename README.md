@@ -1,7 +1,3 @@
-好的，这是一个扩展和优化后的 README 版本，使其更全面、更清晰。
-
------
-
 # 1Panel Logo 生成器
 
 欢迎使用 1Panel Logo 生成器！这是一个简单好用的在线工具，可以帮助您根据输入的文字快速生成 1Panel 控制面板所需的自定义 Logo 图片。
@@ -29,11 +25,12 @@
 
 1Panel 默认文字效果
 
-[1Panel](./imgs/1Panel.png)
+
+![1Panel](./imgs/1Panel.png)
 
 NodeSeek 文字效果
 
-[NodeSeek](./imgs/NodeSeek.png)
+![NodeSeek](./imgs/NodeSeek.png)
 
 ## 🛠️ 如何使用
 
