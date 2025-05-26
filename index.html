@@ -128,14 +128,23 @@
         const logoConfigs = {
             withText: { 
                 label: "带文字", 
-                width: 185, height: 55, 
-                mainFontSize: 26, 
+                baseWidth: 185, height: 55, 
+                mainFontSize: 30, 
                 iconSize: 40, 
                 iconPadding: 8, 
                 iconTextPadding: 6,
                 defaultText: "Logo",
                 getText: (text) => text || "Logo",
-                getFirstChar: (text) => (text.substring(0, 1) || "L").toUpperCase()
+                getFirstChar: (text) => (text.substring(0, 1) || "L").toUpperCase(),
+                // 动态计算宽度的函数
+                getWidth: function(text) {
+                    const displayText = this.getText(text);
+                    // 估算文字宽度：每个字符大约占字体大小的0.6倍宽度
+                    const textWidth = displayText.length * this.mainFontSize * 0.6;
+                    const iconAndPaddingWidth = this.iconPadding + this.iconSize + this.iconTextPadding;
+                    const totalWidth = iconAndPaddingWidth + textWidth + this.iconPadding;
+                    return Math.max(this.baseWidth, totalWidth);
+                }
             },
             withoutText: { 
                 label: "不带文字 (带框)", 
@@ -176,7 +185,7 @@
 
             const textElement = document.createElementNS(svgNS, "text");
             textElement.setAttribute("x", centerX.toFixed(3));
-            textElement.setAttribute("y", centerY.toFixed(3)); 
+            textElement.setAttribute("y", centerY*1.03.toFixed(3)); 
             textElement.setAttribute("dominant-baseline", "middle"); 
             textElement.setAttribute("text-anchor", "middle");
             textElement.setAttribute("fill", color);
@@ -197,11 +206,15 @@
                 if (logoConfigs.hasOwnProperty(type)) {
                     const config = logoConfigs[type];
                     
+                    // 动态计算宽度（如果配置支持的话）
+                    const logoWidth = config.getWidth ? config.getWidth(text) : config.width;
+                    const logoHeight = config.height;
+                    
                     const svg = document.createElementNS(svgNS, "svg");
                     svg.setAttribute("xmlns", svgNS);
-                    svg.setAttribute("width", config.width);
-                    svg.setAttribute("height", config.height);
-                    svg.setAttribute("viewBox", `0 0 ${config.width} ${config.height}`);
+                    svg.setAttribute("width", logoWidth);
+                    svg.setAttribute("height", logoHeight);
+                    svg.setAttribute("viewBox", `0 0 ${logoWidth} ${logoHeight}`);
 
                     const bgRect = document.createElementNS(svgNS, "rect");
                     bgRect.setAttribute("width", "100%");
@@ -211,12 +224,15 @@
 
                     if (type === 'withoutText') {
                         const displayText = config.getText(text);
-                        drawHexagonIcon(svg, config.width / 2, config.height / 2, Math.min(config.width, config.height), displayText, config.fontSize, config.hexagonStrokeWidth, elementColor);
+                        const configWidth = config.width || logoWidth;
+                        drawHexagonIcon(svg, configWidth / 2, logoHeight / 2, Math.min(configWidth, logoHeight), displayText, config.fontSize, config.hexagonStrokeWidth, elementColor);
                     } else if (type === 'icon') {
                         const displayText = config.getText(text);
+                        const configWidth = config.width || logoWidth;
                         const textElement = document.createElementNS(svgNS, "text");
-                        textElement.setAttribute("x", (config.width / 2).toFixed(3));
-                        textElement.setAttribute("y", (config.height / 2).toFixed(3));
+                        textElement.setAttribute("x", (configWidth / 2).toFixed(3));
+                        // 稍微往下调整Y坐标以达到更好的视觉居中效果
+                        textElement.setAttribute("y", (logoHeight / 2 + config.fontSize * 0.1).toFixed(3));
                         textElement.setAttribute("dominant-baseline", "middle");
                         textElement.setAttribute("text-anchor", "middle");
                         textElement.setAttribute("fill", elementColor);
@@ -231,7 +247,7 @@
                         
                         const iconContainerSize = config.iconSize;
                         const iconCenterX = config.iconPadding + iconContainerSize / 2;
-                        const iconCenterY = config.height / 2;
+                        const iconCenterY = logoHeight / 2;
                         const embeddedIconCharFontSize = iconContainerSize * 0.5; 
                         const embeddedHexagonStrokeWidth = Math.max(1.5, iconContainerSize * 0.05);
 
@@ -240,7 +256,8 @@
                         const mainTextElement = document.createElementNS(svgNS, "text");
                         const textX = config.iconPadding + iconContainerSize + config.iconTextPadding;
                         mainTextElement.setAttribute("x", textX);
-                        mainTextElement.setAttribute("y", config.height / 2);
+                        // 稍微往下调整Y坐标以达到更好的视觉居中效果
+                        mainTextElement.setAttribute("y", (logoHeight / 2 + config.mainFontSize * 0.1).toFixed(3));
                         mainTextElement.setAttribute("dominant-baseline", "middle");
                         mainTextElement.setAttribute("text-anchor", "start");
                         mainTextElement.setAttribute("fill", elementColor);
@@ -255,7 +272,7 @@
                     card.className = 'logo-preview-card p-4 rounded-lg'; // Centering styles for card in CSS
                     const title = document.createElement('h3');
                     title.className = 'text-md font-semibold mb-2 text-center'; // text-center for card title
-                    title.textContent = `${config.label} (${config.width}x${config.height}px)`;
+                    title.textContent = `${config.label} (${logoWidth}x${logoHeight}px)`;
                     card.appendChild(title);
                     const svgContainer = document.createElement('div');
                     svgContainer.className = 'generated-svg-item-container rounded-md flex justify-center items-center'; // flex justify-center items-center for SVG itself
@@ -264,7 +281,7 @@
                     const downloadButton = document.createElement('button');
                     downloadButton.className = 'btn-secondary w-full py-2 px-3 mt-3 rounded-md text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 focus:ring-offset-gray-600';
                     downloadButton.textContent = '下载 PNG';
-                    downloadButton.onclick = () => downloadLogoAsPNG(svg, text || "logo", type, config.width, config.height);
+                    downloadButton.onclick = () => downloadLogoAsPNG(svg, text || "logo", type, logoWidth, logoHeight);
                     card.appendChild(downloadButton);
                     logoPreviewContainer.appendChild(card);
                 }
