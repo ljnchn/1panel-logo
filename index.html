@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1Panel 文字 Logo 生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Dark mode specific styles */
+        .dark body {
+            background-color: #1f2937; /* Tailwind gray-800 */
+        }
+        .dark .main-container {
+            background-color: #374151; /* Tailwind gray-700 */
+            color: #d1d5db; /* Tailwind gray-300 */
+        }
+        .dark .header-title {
+            color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        .dark .header-subtitle {
+            color: #9ca3af; /* Tailwind gray-400 */
+        }
+        .dark .control-panel, .dark .preview-section {
+            background-color: #4b5563; /* Tailwind gray-600 */
+            border-color: #52525b; /* Tailwind zinc-600 */
+        }
+        .dark .input-field {
+            background-color: #374151; /* Tailwind gray-700 */
+            border-color: #52525b; /* Tailwind zinc-600 */
+            color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        .dark .input-field::placeholder {
+            color: #9ca3af; /* Tailwind gray-400 */
+        }
+        .dark .input-field:focus {
+            border-color: #60a5fa; /* Tailwind blue-400 */
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+        }
+        .dark .label-text {
+            color: #d1d5db; /* Tailwind gray-300 */
+        }
+        .dark .btn-primary {
+            background-color: #2563eb; /* Tailwind blue-600 */
+            color: white;
+        }
+        .dark .btn-primary:hover {
+            background-color: #1d4ed8; /* Tailwind blue-700 */
+        }
+        .dark .btn-secondary {
+            background-color: #52525b; /* Tailwind zinc-600 */
+            color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .dark .btn-secondary:hover {
+            background-color: #3f3f46; /* Tailwind zinc-700 */
+        }
+        .dark .logo-preview-card {
+            background-color: #374151; /* Tailwind gray-700 */
+            border-color: #52525b; /* Tailwind zinc-600 */
+            width: 90%; /* Ensure cards don't stretch full width if container is wider */
+            max-width: 300px; /* Max width for a card */
+            margin-left: auto; /* Center the card if it's not full width */
+            margin-right: auto; /* Center the card if it's not full width */
+        }
+        .dark .generated-svg-item-container {
+            background-color: #4b5563; /* Tailwind gray-600 for contrast with SVG content */
+            border-color: #52525b; /* Tailwind zinc-600 */
+        }
+        .dark .footer-text {
+            color: #9ca3af; /* Tailwind gray-400 */
+        }
+        .dark .preview-placeholder-text {
+             color: #9ca3af; /* Tailwind gray-400 */
+        }
+    </style>
+</head>
+<body class="dark bg-gray-800 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-blue-500 selection:text-white">
+
+    <div class="main-container w-full max-w-3xl bg-gray-700 shadow-xl rounded-lg p-6 md:p-8">
+        <header class="mb-6 text-center">
+            <h1 class="header-title text-3xl font-bold text-gray-100">1Panel 文字 Logo 生成器</h1>
+            <p class="header-subtitle text-gray-400 mt-1">输入文字，即刻生成三种尺寸的透明背景Logo (PNG格式)。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 control-panel p-6 rounded-lg shadow">
+                <div class="mb-5">
+                    <label for="logoText" class="label-text block text-sm font-medium mb-1">Logo 文字:</label>
+                    <input type="text" id="logoText" value="1Panel" class="input-field mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none sm:text-sm" placeholder="例如: MyLogo">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="elementColorInput" class="label-text block text-sm font-medium mb-1">元素颜色:</label>
+                    <input type="color" id="elementColorInput" value="#F3C49E" class="input-field mt-1 block w-full h-10 border-0 rounded-md shadow-sm focus:outline-none p-0.5">
+                </div>
+
+                <button id="generateBtn" class="btn-primary w-full py-2.5 px-4 rounded-md font-semibold shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-700">
+                    生成 Logo
+                </button>
+            </div>
+
+            <div class="md:col-span-2 preview-section p-6 rounded-lg shadow">
+                <h2 class="header-title text-xl font-semibold text-gray-100 mb-4 text-center">预览与下载 (PNG)</h2>
+                <div id="logoPreviewContainer" class="space-y-6 flex flex-col items-center">
+                    <span class="preview-placeholder-text text-gray-400 block text-center">点击 "生成 Logo" 查看预览。</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center">
+            <p class="footer-text text-xs text-gray-400">1Panel 文字 Logo 生成器 &copy; by Ersic</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const logoTextInput = document.getElementById('logoText');
+        const generateBtn = document.getElementById('generateBtn');
+        const logoPreviewContainer = document.getElementById('logoPreviewContainer');
+        const elementColorInput = document.getElementById('elementColorInput');
+
+        // SVG Namespace
+        const svgNS = "http://www.w3.org/2000/svg";
+
+        // Configurations for different logo types
+        const logoConfigs = {
+            withText: { 
+                label: "带文字", 
+                width: 185, height: 55, 
+                mainFontSize: 26, 
+                iconSize: 40, 
+                iconPadding: 8, 
+                iconTextPadding: 6,
+                defaultText: "Logo",
+                getText: (text) => text || "Logo",
+                getFirstChar: (text) => (text.substring(0, 1) || "L").toUpperCase()
+            },
+            withoutText: { 
+                label: "不带文字 (带框)", 
+                width: 82, height: 82, 
+                fontSize: 38, 
+                hexagonStrokeWidth: 4,
+                defaultText: "L",
+                getText: (text) => (text.substring(0, 1) || "L").toUpperCase()
+            },
+            icon: { 
+                label: "网站图标 (首字母)",
+                width: 16, height: 16, 
+                fontSize: 11,
+                defaultText: "i",
+                getText: (text) => (text.substring(0, 1) || "i").toUpperCase()
+            }
+        };
+        
+        function getHexagonPathD(centerX, centerY, radius) {
+            let points = "";
+            for (let i = 0; i < 6; i++) {
+                points += (centerX + radius * Math.cos(Math.PI / 180 * (30 + i * 60))).toFixed(3) + "," +
+                          (centerY + radius * Math.sin(Math.PI / 180 * (30 + i * 60))).toFixed(3) + " ";
+            }
+            return `M ${points.split(" ")[0]} L ${points.split(" ")[1]} L ${points.split(" ")[2]} L ${points.split(" ")[3]} L ${points.split(" ")[4]} L ${points.split(" ")[5]} Z`;
+        }
+
+        function drawHexagonIcon(svg, centerX, centerY, overallSize, char, charFontSize, hexagonStrokeWidth, color) {
+            const padding = hexagonStrokeWidth / 2 + Math.max(1, overallSize * 0.05);
+            const hexRadius = (overallSize / 2) - padding;
+
+            const hexagon = document.createElementNS(svgNS, "path");
+            hexagon.setAttribute("d", getHexagonPathD(centerX, centerY, hexRadius));
+            hexagon.setAttribute("stroke", color);
+            hexagon.setAttribute("stroke-width", hexagonStrokeWidth);
+            hexagon.setAttribute("fill", "transparent");
+            svg.appendChild(hexagon);
+
+            const textElement = document.createElementNS(svgNS, "text");
+            textElement.setAttribute("x", centerX.toFixed(3));
+            textElement.setAttribute("y", centerY.toFixed(3)); 
+            textElement.setAttribute("dominant-baseline", "middle"); 
+            textElement.setAttribute("text-anchor", "middle");
+            textElement.setAttribute("fill", color);
+            textElement.setAttribute("font-size", charFontSize);
+            textElement.setAttribute("font-family", "Arial, Helvetica, sans-serif");
+            textElement.setAttribute("font-weight", "bold");
+            textElement.textContent = char;
+            svg.appendChild(textElement);
+        }
+
+        function generateAllLogos() {
+            const text = logoTextInput.value.trim();
+            const elementColor = elementColorInput.value;
+
+            logoPreviewContainer.innerHTML = ''; 
+
+            for (const type in logoConfigs) {
+                if (logoConfigs.hasOwnProperty(type)) {
+                    const config = logoConfigs[type];
+                    
+                    const svg = document.createElementNS(svgNS, "svg");
+                    svg.setAttribute("xmlns", svgNS);
+                    svg.setAttribute("width", config.width);
+                    svg.setAttribute("height", config.height);
+                    svg.setAttribute("viewBox", `0 0 ${config.width} ${config.height}`);
+
+                    const bgRect = document.createElementNS(svgNS, "rect");
+                    bgRect.setAttribute("width", "100%");
+                    bgRect.setAttribute("height", "100%");
+                    bgRect.setAttribute("fill", "transparent");
+                    svg.appendChild(bgRect);
+
+                    if (type === 'withoutText') {
+                        const displayText = config.getText(text);
+                        drawHexagonIcon(svg, config.width / 2, config.height / 2, Math.min(config.width, config.height), displayText, config.fontSize, config.hexagonStrokeWidth, elementColor);
+                    } else if (type === 'icon') {
+                        const displayText = config.getText(text);
+                        const textElement = document.createElementNS(svgNS, "text");
+                        textElement.setAttribute("x", (config.width / 2).toFixed(3));
+                        textElement.setAttribute("y", (config.height / 2).toFixed(3));
+                        textElement.setAttribute("dominant-baseline", "middle");
+                        textElement.setAttribute("text-anchor", "middle");
+                        textElement.setAttribute("fill", elementColor);
+                        textElement.setAttribute("font-size", config.fontSize);
+                        textElement.setAttribute("font-family", "Arial, Helvetica, sans-serif");
+                        textElement.setAttribute("font-weight", "bold");
+                        textElement.textContent = displayText;
+                        svg.appendChild(textElement);
+                    } else if (type === 'withText') {
+                        const firstChar = config.getFirstChar(text);
+                        const mainText = config.getText(text);
+                        
+                        const iconContainerSize = config.iconSize;
+                        const iconCenterX = config.iconPadding + iconContainerSize / 2;
+                        const iconCenterY = config.height / 2;
+                        const embeddedIconCharFontSize = iconContainerSize * 0.5; 
+                        const embeddedHexagonStrokeWidth = Math.max(1.5, iconContainerSize * 0.05);
+
+                        drawHexagonIcon(svg, iconCenterX, iconCenterY, iconContainerSize, firstChar, embeddedIconCharFontSize, embeddedHexagonStrokeWidth, elementColor);
+                        
+                        const mainTextElement = document.createElementNS(svgNS, "text");
+                        const textX = config.iconPadding + iconContainerSize + config.iconTextPadding;
+                        mainTextElement.setAttribute("x", textX);
+                        mainTextElement.setAttribute("y", config.height / 2);
+                        mainTextElement.setAttribute("dominant-baseline", "middle");
+                        mainTextElement.setAttribute("text-anchor", "start");
+                        mainTextElement.setAttribute("fill", elementColor);
+                        mainTextElement.setAttribute("font-size", config.mainFontSize);
+                        mainTextElement.setAttribute("font-family", "Arial, Helvetica, sans-serif");
+                        mainTextElement.setAttribute("font-weight", "bold");
+                        mainTextElement.textContent = mainText;
+                        svg.appendChild(mainTextElement);
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'logo-preview-card p-4 rounded-lg'; // Centering styles for card in CSS
+                    const title = document.createElement('h3');
+                    title.className = 'text-md font-semibold mb-2 text-center'; // text-center for card title
+                    title.textContent = `${config.label} (${config.width}x${config.height}px)`;
+                    card.appendChild(title);
+                    const svgContainer = document.createElement('div');
+                    svgContainer.className = 'generated-svg-item-container rounded-md flex justify-center items-center'; // flex justify-center items-center for SVG itself
+                    svgContainer.appendChild(svg.cloneNode(true));
+                    card.appendChild(svgContainer);
+                    const downloadButton = document.createElement('button');
+                    downloadButton.className = 'btn-secondary w-full py-2 px-3 mt-3 rounded-md text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 focus:ring-offset-gray-600';
+                    downloadButton.textContent = '下载 PNG';
+                    downloadButton.onclick = () => downloadLogoAsPNG(svg, text || "logo", type, config.width, config.height);
+                    card.appendChild(downloadButton);
+                    logoPreviewContainer.appendChild(card);
+                }
+            }
+        }
+
+        function downloadLogoAsPNG(svgElement, baseFilename, type, width, height) {
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+            const svgBase64 = btoa(unescape(encodeURIComponent(svgString)));
+            const dataUrl = `data:image/svg+xml;base64,${svgBase64}`;
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const pngDataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = pngDataUrl;
+                const filenameSafeText = baseFilename.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                link.download = `${filenameSafeText}_${type}.png`; 
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+            img.onerror = (e) => {
+                console.error("Error loading SVG into image:", e);
+                const errorMsgContainer = document.createElement('p');
+                errorMsgContainer.className = "text-red-400 text-xs text-center";
+                errorMsgContainer.textContent = `错误：无法将 ${type} Logo转换为PNG。`;
+                logoPreviewContainer.appendChild(errorMsgContainer);
+            };
+            img.src = dataUrl;
+        }
+
+        // Event Listeners
+        generateBtn.addEventListener('click', generateAllLogos);
+
+        const initialMessageSpan = logoPreviewContainer.querySelector('span');
+        if (initialMessageSpan) {
+            initialMessageSpan.className = 'preview-placeholder-text text-gray-400 block text-center'; // text-center added
+        }
+        
+        document.body.classList.add('dark');
+
+    </script>
+</body>
+</html>
